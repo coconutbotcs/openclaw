@@ -95,6 +95,14 @@ export const AgentDefaultsSchema = z
         mode: z.union([z.literal("default"), z.literal("safeguard")]).optional(),
         reserveTokensFloor: z.number().int().nonnegative().optional(),
         maxHistoryShare: z.number().min(0.1).max(0.9).optional(),
+        rateLimitCompactionThreshold: z
+          .number()
+          .min(0)
+          .max(100)
+          .optional()
+          .describe(
+            "Context usage % above which a rate limit triggers compaction before cooldown. 0 disables. Default: 60.",
+          ),
         memoryFlush: z
           .object({
             enabled: z.boolean().optional(),
