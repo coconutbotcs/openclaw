@@ -136,6 +136,19 @@ timeouts that exhausted profile rotation (other errors do not advance fallback).
 When a run starts with a model override (hooks or CLI), fallbacks still end at
 `agents.defaults.model.primary` after trying any configured fallbacks.
 
+## Rate-limit compaction
+
+Before falling back to a different model on a 429, OpenClaw checks whether the
+current context is large enough to benefit from compaction. If context usage
+exceeds the `rateLimitCompactionThreshold` (default 60%), OpenClaw compacts the
+session and retries with the **same** model. Only if that still fails does
+normal failover proceed.
+
+This keeps conversations on the preferred model whenever possible, since a
+smaller context is less likely to trigger the same rate limit again.
+
+See [Compaction](/concepts/compaction) for full compaction details.
+
 ## Related config
 
 See [Gateway configuration](/gateway/configuration) for:

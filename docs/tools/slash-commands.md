@@ -60,6 +60,11 @@ They run immediately, are stripped before the model sees the message, and the re
 - `commands.bashForegroundMs` (default `2000`) controls how long bash waits before switching to background mode (`0` backgrounds immediately).
 - `commands.config` (default `false`) enables `/config` (reads/writes `openclaw.json`).
 - `commands.debug` (default `false`) enables `/debug` (runtime-only overrides).
+- `commands.statelessQuery` (optional) configures the `/ask` command:
+  - `enabled` (default `true`) — enable/disable the command.
+  - `includeTools` (default `false`) — include tool definitions in stateless queries.
+  - `appendToHistory` (default `false`) — append Q&A to the session transcript.
+  - `model` (optional) — override model for stateless queries (e.g. `"anthropic/claude-haiku-4-5"` for cheaper one-off answers).
 - `commands.allowFrom` (optional) sets a per-provider allowlist for command authorization. When configured, it is the
   only authorization source for commands and directives (channel allowlists/pairing and `commands.useAccessGroups`
   are ignored). Use `"*"` for a global default; provider-specific keys override it.
@@ -102,6 +107,8 @@ Text + native (when enabled):
 - `/model <name>` (alias: `/models`; or `/<alias>` from `agents.defaults.models.*.alias`)
 - `/queue <mode>` (plus options like `debounce:2s cap:25 drop:summarize`; send `/queue` to see current settings)
 - `/bash <command>` (host-only; alias for `! <command>`; requires `commands.bash: true` + `tools.elevated` allowlists)
+
+- `/ask <message>` (stateless query — no session context; aliases: `/q`, `/quick`)
 
 Text-only:
 
