@@ -133,6 +133,24 @@ export const CommandsSchema = z
     useAccessGroups: z.boolean().optional(),
     ownerAllowFrom: z.array(z.union([z.string(), z.number()])).optional(),
     allowFrom: ElevatedAllowFromSchema.optional(),
+    statelessQuery: z
+      .object({
+        enabled: z.boolean().optional().describe("Enable /ask command. Default: true."),
+        includeTools: z
+          .boolean()
+          .optional()
+          .describe("Include tool definitions in stateless queries. Default: false."),
+        appendToHistory: z
+          .boolean()
+          .optional()
+          .describe("Append stateless Q&A to session history. Default: false."),
+        model: z
+          .string()
+          .optional()
+          .describe("Override model for stateless queries (provider/model)."),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .optional()

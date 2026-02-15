@@ -607,11 +607,28 @@ function buildChatCommands(): ChatCommandDefinition[] {
         },
       ],
     }),
+    defineChatCommand({
+      key: "ask",
+      nativeName: "ask",
+      description: "Send a stateless query (no session context).",
+      textAlias: "/ask",
+      category: "session",
+      args: [
+        {
+          name: "message",
+          description: "Query text",
+          type: "string",
+          captureRemaining: true,
+          required: true,
+        },
+      ],
+    }),
     ...listChannelDocks()
       .filter((dock) => dock.capabilities.nativeCommands)
       .map((dock) => defineDockCommand(dock)),
   ];
 
+  registerAlias(commands, "ask", "/q", "/quick");
   registerAlias(commands, "whoami", "/id");
   registerAlias(commands, "think", "/thinking", "/t");
   registerAlias(commands, "verbose", "/v");

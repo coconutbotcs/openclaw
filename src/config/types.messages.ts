@@ -125,6 +125,17 @@ export type CommandsConfig = {
    * Example: { "*": ["user1"], discord: ["user:123"] }
    */
   allowFrom?: CommandAllowFrom;
+  /** Configuration for the /ask stateless query command. */
+  statelessQuery?: {
+    /** Enable /ask command (default: true). */
+    enabled?: boolean;
+    /** Include tool definitions in stateless queries (default: false). */
+    includeTools?: boolean;
+    /** Append stateless Q&A to session history (default: false). */
+    appendToHistory?: boolean;
+    /** Override model for stateless queries (provider/model). */
+    model?: string;
+  };
 };
 
 export type ProviderCommandsConfig = {
