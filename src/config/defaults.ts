@@ -459,6 +459,7 @@ export function applyCompactionDefaults(cfg: OpenClawConfig): OpenClawConfig {
         compaction: {
           ...compaction,
           mode: "safeguard",
+          rateLimitCompactionThreshold: compaction?.rateLimitCompactionThreshold ?? 60,
         },
       },
     },
