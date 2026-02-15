@@ -54,6 +54,23 @@ export type ContextWindowGuardResult = ContextWindowInfo & {
   shouldBlock: boolean;
 };
 
+/**
+ * Calculate context window usage as a percentage (0–100).
+ * Used by rate-limit-aware compaction to decide whether compaction would help.
+ */
+export function getContextUsagePercent(
+  sessionEntry: { totalTokens?: number; contextTokens?: number },
+  modelContextWindow: number,
+  configContextTokens?: number,
+): number {
+  const effectiveWindow = configContextTokens ?? modelContextWindow;
+  const used = sessionEntry.totalTokens ?? 0;
+  if (effectiveWindow <= 0) {
+    return 0;
+  }
+  return Math.round((used / effectiveWindow) * 100);
+}
+
 export function evaluateContextWindowGuard(params: {
   info: ContextWindowInfo;
   warnBelowTokens?: number;
