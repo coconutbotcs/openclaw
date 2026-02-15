@@ -844,14 +844,6 @@ export async function runEmbeddedPiAgent(
               );
               if (contextPercent >= threshold) {
                 log.info(
-                  {
-                    event: "rate_limit_compaction",
-                    contextPercent,
-                    threshold,
-                    provider,
-                    model: modelId,
-                    sessionKey: params.sessionKey ?? params.sessionId,
-                  },
                   `Rate limit hit with context at ${contextPercent}% (threshold: ${threshold}%). Compacting before cooldown for ${provider}/${modelId}`,
                 );
                 try {
@@ -876,7 +868,7 @@ export async function runEmbeddedPiAgent(
                     bashElevated: params.bashElevated,
                     extraSystemPrompt: params.extraSystemPrompt,
                     ownerNumbers: params.ownerNumbers,
-                    trigger: "rate_limit",
+                    trigger: "overflow",
                   });
                   rateLimitCompactionAttempted = true;
                   if (compactResult.compacted) {
