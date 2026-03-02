@@ -54,6 +54,23 @@ Context window is model-specific. OpenClaw uses the model definition from the co
 
 See [/concepts/session-pruning](/concepts/session-pruning) for pruning details.
 
+## Rate-limit-aware compaction
+
+When a model returns a **429 rate limit** and context usage exceeds a configurable
+threshold (default **60%**), OpenClaw compacts before entering cooldown. This
+reduces context size so the retry (or next message) is less likely to hit the
+same limit again.
+
+Configure with `agents.defaults.compaction.rateLimitCompactionThreshold`:
+
+- **0** — disabled (never compact on rate limit).
+- **60** (default) — compact when context is ≥ 60% full on a 429.
+- **100** — always compact on rate limit regardless of context size.
+
+Heartbeat runs that hit a rate limit are silently suppressed (return
+`HEARTBEAT_OK`) instead of retrying, to avoid burning rate-limit budget on
+background work.
+
 ## Tips
 
 - Use `/compact` when sessions feel stale or context is bloated.
