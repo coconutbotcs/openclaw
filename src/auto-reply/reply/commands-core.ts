@@ -31,6 +31,7 @@ import {
   handleStopCommand,
   handleUsageCommand,
 } from "./commands-session.js";
+import { handleStatelessQueryCommand } from "./commands-stateless.js";
 import { handleSubagentsCommand } from "./commands-subagents.js";
 import { handleTtsCommands } from "./commands-tts.js";
 import { routeReply } from "./route-reply.js";
@@ -42,6 +43,7 @@ export async function handleCommands(params: HandleCommandsParams): Promise<Comm
     HANDLERS = [
       // Plugin commands are processed first, before built-in commands
       handlePluginCommand,
+      handleStatelessQueryCommand,
       handleBashCommand,
       handleActivationCommand,
       handleSendPolicyCommand,
