@@ -8,6 +8,7 @@ import type { TypingSignaler } from "./typing-mode.js";
 import { resolveAgentModelFallbacksOverride } from "../../agents/agent-scope.js";
 import { runCliAgent } from "../../agents/cli-runner.js";
 import { getCliSessionId } from "../../agents/cli-session.js";
+import { isFailoverError } from "../../agents/failover-error.js";
 import { runWithModelFallback } from "../../agents/model-fallback.js";
 import { isCliProvider } from "../../agents/model-selection.js";
 import {
@@ -522,6 +523,19 @@ export async function runAgentTurnWithFallback(params: {
           payload: {
             text: "⚠️ Session history was corrupted. I've reset the conversation - please try again!",
           },
+        };
+      }
+
+      // Heartbeat suppression: when a heartbeat run hits a rate limit,
+      // return silently instead of retrying — don't burn more rate limit on background work.
+      if (
+        params.isHeartbeat &&
+        (isFailoverError(err) ? err.reason === "rate_limit" : /429|rate.?limit/i.test(message))
+      ) {
+        defaultRuntime.error("Heartbeat suppressed due to rate limit; will retry next interval");
+        return {
+          kind: "final",
+          payload: { text: "HEARTBEAT_OK" },
         };
       }
 
