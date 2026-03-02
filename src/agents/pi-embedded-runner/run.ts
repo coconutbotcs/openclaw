@@ -15,6 +15,7 @@ import {
   CONTEXT_WINDOW_HARD_MIN_TOKENS,
   CONTEXT_WINDOW_WARN_BELOW_TOKENS,
   evaluateContextWindowGuard,
+  getContextUsagePercent,
   resolveContextWindowInfo,
 } from "../context-window-guard.js";
 import { DEFAULT_CONTEXT_TOKENS, DEFAULT_MODEL, DEFAULT_PROVIDER } from "../defaults.js";
@@ -411,6 +412,7 @@ export async function runEmbeddedPiAgent(
       const MAX_OVERFLOW_COMPACTION_ATTEMPTS = 3;
       let overflowCompactionAttempts = 0;
       let toolResultTruncationAttempted = false;
+      let rateLimitCompactionAttempted = false;
       const usageAccumulator = createUsageAccumulator();
       let lastRunPromptUsage: ReturnType<typeof normalizeUsage> | undefined;
       let autoCompactionCount = 0;
@@ -822,6 +824,72 @@ export async function runEmbeddedPiAgent(
             log.warn(
               `Profile ${lastProfileId} rejected image payload${details ? ` (${details})` : ""}.`,
             );
+          }
+
+          // Rate limit + high context → compact before cooldown/failover
+          if (rateLimitFailure && !rateLimitCompactionAttempted && !aborted) {
+            const threshold =
+              params.config?.agents?.defaults?.compaction?.rateLimitCompactionThreshold ?? 60;
+            if (threshold > 0) {
+              // Use the last API call's prompt tokens as a proxy for context usage.
+              const lastPromptTokens =
+                usageAccumulator.lastInput +
+                usageAccumulator.lastCacheRead +
+                usageAccumulator.lastCacheWrite;
+              const configContextTokens = params.config?.agents?.defaults?.contextTokens;
+              const contextPercent = getContextUsagePercent(
+                { totalTokens: lastPromptTokens || undefined },
+                ctxInfo.tokens,
+                configContextTokens,
+              );
+              if (contextPercent >= threshold) {
+                log.info(
+                  `Rate limit hit with context at ${contextPercent}% (threshold: ${threshold}%). Compacting before cooldown for ${provider}/${modelId}`,
+                );
+                try {
+                  const compactResult = await compactEmbeddedPiSessionDirect({
+                    sessionId: params.sessionId,
+                    sessionKey: params.sessionKey,
+                    messageChannel: params.messageChannel,
+                    messageProvider: params.messageProvider,
+                    agentAccountId: params.agentAccountId,
+                    authProfileId: lastProfileId,
+                    sessionFile: params.sessionFile,
+                    workspaceDir: resolvedWorkspace,
+                    agentDir,
+                    config: params.config,
+                    skillsSnapshot: params.skillsSnapshot,
+                    senderIsOwner: params.senderIsOwner,
+                    provider,
+                    model: modelId,
+                    runId: params.runId,
+                    thinkLevel,
+                    reasoningLevel: params.reasoningLevel,
+                    bashElevated: params.bashElevated,
+                    extraSystemPrompt: params.extraSystemPrompt,
+                    ownerNumbers: params.ownerNumbers,
+                    trigger: "overflow",
+                  });
+                  rateLimitCompactionAttempted = true;
+                  if (compactResult.compacted) {
+                    autoCompactionCount += 1;
+                    log.info(
+                      `Compaction succeeded after rate limit; retrying for ${provider}/${modelId}`,
+                    );
+                    continue;
+                  }
+                  log.warn(
+                    `Compaction after rate limit did not help: ${compactResult.reason ?? "nothing to compact"}`,
+                  );
+                } catch (compactErr) {
+                  rateLimitCompactionAttempted = true;
+                  log.warn(
+                    `Compaction after rate limit failed: ${describeUnknownError(compactErr)}`,
+                  );
+                  // Fall through to normal failover
+                }
+              }
+            }
           }
 
           // Treat timeout as potential rate limit (Antigravity hangs on rate limit)
